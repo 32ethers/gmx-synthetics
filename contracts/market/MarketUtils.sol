@@ -495,6 +495,7 @@ library MarketUtils {
         return dataStore.getUint(Keys.maxPoolUsdForDepositKey(market, token));
     }
 
+    //资金使用率
     function getUsageFactor(
         DataStore dataStore,
         Market.Props memory market,
@@ -513,7 +514,7 @@ library MarketUtils {
         uint256 maxOpenInterest = getMaxOpenInterest(dataStore, market.marketToken, isLong);
         uint256 openInterest = getOpenInterest(dataStore, market, isLong);
         uint256 openInterestUsageFactor = Precision.toFactor(openInterest, maxOpenInterest);
-
+        //取Pool使用率和openInterest使用率中较大的那个.
         return reserveUsageFactor > openInterestUsageFactor ? reserveUsageFactor : openInterestUsageFactor;
     }
 
@@ -809,7 +810,7 @@ library MarketUtils {
         if (priceImpactUsd < 0) {
             return priceImpactUsd;
         }
-
+        // priceImpactUsd不能超过PositionImpactPool的价值, 也不能超过sizeDeltaUsd*maxPriceImpactFactor(人为上限)
         uint256 impactPoolAmount = getPositionImpactPoolAmount(dataStore, market);
         int256 maxPriceImpactUsdBasedOnImpactPool = (impactPoolAmount * indexTokenPrice.min).toInt256();
 
@@ -1004,7 +1005,9 @@ library MarketUtils {
         MarketPrices memory prices
     ) external {
         GetNextFundingAmountPerSizeResult memory result = getNextFundingAmountPerSize(dataStore, market, prices);
+        // 在每个交易之前呼叫, 更新pool中分钱的金额
 
+        // 做市的四种组合, 加上fundingFeeAmountPerSizeDelta和claimableFundingAmountPerSizeDelta
         applyDeltaToFundingFeeAmountPerSize(
             dataStore,
             eventEmitter,
@@ -1078,7 +1081,7 @@ library MarketUtils {
         );
 
         setSavedFundingFactorPerSecond(dataStore, market.marketToken, result.nextSavedFundingFactorPerSecond);
-
+        //更新时间戳
         dataStore.setUint(Keys.fundingUpdatedAtKey(market.marketToken), Chain.currentTimestamp());
     }
 
@@ -2879,6 +2882,7 @@ library MarketUtils {
         Market.Props memory market,
         address token
     ) internal view {
+        //验证的是, 在这个market中, token(usdc,eth)的数量是否符合要求
         if (market.marketToken == address(0) || token == address(0)) {
             revert Errors.EmptyAddressInMarketTokenBalanceValidation(market.marketToken, token);
         }
@@ -2897,13 +2901,14 @@ library MarketUtils {
 
         // use 1 for the getCollateralSum divisor since getCollateralSum does not sum over both the
         // longToken and shortToken
+        // usdc不能超过抵押的usdc的数量
         uint256 collateralAmount = getCollateralSum(dataStore, market.marketToken, token, true, 1);
         collateralAmount += getCollateralSum(dataStore, market.marketToken, token, false, 1);
 
         if (balance < collateralAmount) {
             revert Errors.InvalidMarketTokenBalanceForCollateralAmount(market.marketToken, token, balance, collateralAmount);
         }
-
+        //比用户未提取的funding fee少.
         uint256 claimableFundingFeeAmount = dataStore.getUint(Keys.claimableFundingAmountKey(market.marketToken, token));
 
         // in case of late liquidations, it may be possible for the claimableFundingFeeAmount to exceed the market token balance
@@ -2933,6 +2938,8 @@ library MarketUtils {
         // are incremented without a corresponding decrease of the collateral of
         // other positions, the collateral of other positions is decreased when
         // those positions are updated
+        // 资金费用不包括在此汇总中，因为可领取的资金费用会在没有相应减少其他仓位抵押品的情况下增加，
+        // 其他仓位的抵押品在这些仓位更新时才会减少
         return
             cache.poolAmount
             + cache.swapImpactPoolAmount

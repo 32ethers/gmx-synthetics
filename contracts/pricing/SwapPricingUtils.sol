@@ -287,10 +287,10 @@ library SwapPricingUtils {
         uint256 swapFeeReceiverFactor = dataStore.getUint(Keys.SWAP_FEE_RECEIVER_FACTOR);
 
         uint256 feeAmount = Precision.applyFactor(amount, feeFactor);
-
+        //fee amount包含feeReceiverAmount和feeAmountForPool
         fees.feeReceiverAmount = Precision.applyFactor(feeAmount, swapFeeReceiverFactor);
         fees.feeAmountForPool = feeAmount - fees.feeReceiverAmount;
-
+        //ui fee单独算(但是现在费率是0)
         fees.uiFeeReceiver = uiFeeReceiver;
         fees.uiFeeReceiverFactor = MarketUtils.getUiFeeFactor(dataStore, uiFeeReceiver);
         fees.uiFeeAmount = Precision.applyFactor(amount, fees.uiFeeReceiverFactor);
