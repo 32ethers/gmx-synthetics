@@ -97,6 +97,13 @@ library DecreasePositionUtils {
         }
 
         // cap the initialCollateralDeltaAmount to the position collateralAmount
+        // initialCollateralDeltaAmount的含义: 用户发起交易中, 想要处理的质押token的数量
+        // @param initialCollateralDeltaAmount for increase orders, initialCollateralDeltaAmount
+        // is the amount of the initialCollateralToken sent in by the user
+        // for decrease orders, initialCollateralDeltaAmount is the amount of the position's
+        // collateralToken to withdraw
+        // for swaps, initialCollateralDeltaAmount is the amount of initialCollateralToken sent
+        // in for the swap
         if (params.order.initialCollateralDeltaAmount() > params.position.collateralAmount()) {
             OrderEventUtils.emitOrderCollateralDeltaAmountAutoUpdated(
                 params.contracts.eventEmitter,
@@ -119,8 +126,9 @@ library DecreasePositionUtils {
                 params.position,
                 params.position.sizeInUsd()
             );
-
+            // 计算这次要提走多少利润
             cache.estimatedRealizedPnlUsd = Precision.mulDiv(cache.estimatedPositionPnlUsd, params.order.sizeDeltaUsd(), params.position.sizeInUsd());
+            // 剩下多少利润
             cache.estimatedRemainingPnlUsd = cache.estimatedPositionPnlUsd - cache.estimatedRealizedPnlUsd;
 
             PositionUtils.WillPositionCollateralBeSufficientValues memory positionValues = PositionUtils.WillPositionCollateralBeSufficientValues(
@@ -158,6 +166,7 @@ library DecreasePositionUtils {
                 // the estimatedRemainingCollateralUsd subtracts the initialCollateralDeltaAmount
                 // since the initialCollateralDeltaAmount will be set to zero, the initialCollateralDeltaAmount
                 // should be added back to the estimatedRemainingCollateralUsd
+                //TODO: 不够就revert, 为什么要把处理的质押设置为0? 
                 estimatedRemainingCollateralUsd += (params.order.initialCollateralDeltaAmount() * cache.collateralTokenPrice.min).toInt256();
                 params.order.setInitialCollateralDeltaAmount(0);
             }
@@ -196,6 +205,7 @@ library DecreasePositionUtils {
 
         // if the position will be closed, set the initial collateral delta amount
         // to zero to help ensure that the order can be executed
+        // TODO: 为啥setInitialCollateralDeltaAmount(0)能保证订单执行? 为了绕过校验逻辑? 
         if (params.order.sizeDeltaUsd() == params.position.sizeInUsd() && params.order.initialCollateralDeltaAmount() > 0) {
             params.order.setInitialCollateralDeltaAmount(0);
         }

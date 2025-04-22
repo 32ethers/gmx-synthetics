@@ -316,6 +316,7 @@ library PositionPricingUtils {
     function getPositionFees(
         GetPositionFeesParams memory params
     ) internal view returns (PositionFees memory) {
+        //坑啊. 不光是推荐的. PositionFees也在里面, 名字起得不直观
         PositionFees memory fees = getPositionFeesAfterReferral(
             params.dataStore,
             params.referralStorage,
@@ -344,7 +345,7 @@ library PositionPricingUtils {
             fees.borrowing.borrowingFeeAmountForFeeReceiver +
             fees.liquidation.liquidationFeeAmount -
             fees.liquidation.liquidationFeeAmountForFeeReceiver;
-
+        // position fee没有reciever amount
         fees.feeReceiverAmount +=
             fees.borrowing.borrowingFeeAmountForFeeReceiver +
             fees.liquidation.liquidationFeeAmountForFeeReceiver;
@@ -381,14 +382,19 @@ library PositionPricingUtils {
             params.sizeDeltaUsd,
             params.uiFeeReceiver
         );
-
+        /*
+        总结: 
+        直接乘以费率: PositionFees,getLiquidationFees,ui fee
+        根据建仓时的因子和当前因子: borrowingFeeUsd, funding fee
+        
+        */
         fees.totalCostAmountExcludingFunding =
             fees.positionFeeAmount
             + fees.borrowing.borrowingFeeAmount
             + fees.liquidation.liquidationFeeAmount
             + fees.ui.uiFeeAmount
             - fees.totalDiscountAmount;
-
+        //TODO: 怎么没算 claimableFundingAmount
         fees.totalCostAmount =
             fees.totalCostAmountExcludingFunding
             + fees.funding.fundingFeeAmount;
@@ -405,7 +411,9 @@ library PositionPricingUtils {
 
         borrowingFees.borrowingFeeUsd = borrowingFeeUsd;
         borrowingFees.borrowingFeeAmount = borrowingFeeUsd / collateralTokenPrice.min;
+        //370000000000000000000000000000
         borrowingFees.borrowingFeeReceiverFactor = dataStore.getUint(Keys.BORROWING_FEE_RECEIVER_FACTOR);
+        //给keeper的那部分
         borrowingFees.borrowingFeeAmountForFeeReceiver = Precision.applyFactor(borrowingFees.borrowingFeeAmount, borrowingFees.borrowingFeeReceiverFactor);
 
         return borrowingFees;

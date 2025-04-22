@@ -76,6 +76,18 @@ library DecreasePositionCollateralUtils {
         // for ADLs it may be possible that a position needs to be closed by a larger
         // size to fully pay for fees, but closing by that larger size could cause a PnlOvercorrected
         // error to be thrown in AdlHandler, this case should be rare
+        /*
+        仅当是清算（liquidation）或自动去杠杆（ADL）订单时，才允许以资不抵债的状态关闭头寸。
+        isInsolventCloseAllowed 参数用于 handleEarlyReturn 函数中，用来判断当 remainingCostUsd 小于零时，交易是否应该回滚（revert）。
+
+        要使 isInsolventCloseAllowed 为 true，sizeDeltaUsd 必须等于整个头寸的规模（position size），
+        否则可能存在尚未实现的正向收益（pending positive PnL），这些收益可以用于支付费用，
+        如果头寸不是完全关闭，就会导致收费不足的问题。
+
+        对于 ADL（自动去杠杆）情况，有可能需要以更大的头寸规模来关闭，以便完全支付费用，
+        但如果关闭的规模过大，可能会在 AdlHandler 中触发 PnlOvercorrected 错误。
+        不过，这种情况应该是比较少见的。
+        */
         collateralCache.isInsolventCloseAllowed =
             params.order.sizeDeltaUsd() == params.position.sizeInUsd() &&
             (

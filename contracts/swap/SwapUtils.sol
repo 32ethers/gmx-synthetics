@@ -105,7 +105,7 @@ library SwapUtils {
         if (params.amountIn == 0) {
             return (params.tokenIn, params.amountIn);
         }
-
+        // 从参数看, deposit走的是这段逻辑
         if (params.swapPathMarkets.length == 0) {
             if (params.amountIn < params.minOutputAmount) {
                 revert Errors.InsufficientOutputAmount(params.amountIn, params.minOutputAmount);
@@ -122,7 +122,7 @@ library SwapUtils {
 
             return (params.tokenIn, params.amountIn);
         }
-
+        // 启动转帐路径的第一步
         if (address(params.bank) != params.swapPathMarkets[0].marketToken) {
             params.bank.transferOut(params.tokenIn, params.swapPathMarkets[0].marketToken, params.amountIn, false);
         }

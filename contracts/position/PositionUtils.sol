@@ -228,7 +228,7 @@ library PositionUtils {
 
         cache.positionPnlUsd = Precision.mulDiv(cache.totalPositionPnl, cache.sizeDeltaInTokens, position.sizeInTokens());
         cache.uncappedPositionPnlUsd = Precision.mulDiv(cache.uncappedTotalPositionPnl, cache.sizeDeltaInTokens, position.sizeInTokens());
-
+        // 最终的PNL, 未限制的PNL(PNL受到一定限制, 这个相当于原始值), sizedelta
         return (cache.positionPnlUsd, cache.uncappedPositionPnlUsd, cache.sizeDeltaInTokens);
     }
 
@@ -350,6 +350,11 @@ library PositionUtils {
         // if the positive price impact is reduced should not be allowed to be created
         // as they would be easily liquidated if the price impact changes
         // cap the priceImpactUsd to zero to prevent these positions from being created
+        /*
+        即使存在较大的正向价格冲击，也不应允许创建那些如果正向价格冲击减少后会被强制平仓的头寸，因为如果价格冲击发生变化，这些头寸很容易被清算。
+        将 priceImpactUsd 限制为零，以防止这些头寸的创建。
+
+        */
         if (cache.priceImpactUsd >= 0) {
             cache.priceImpactUsd = 0;
         } else {
@@ -444,6 +449,25 @@ library PositionUtils {
     // since some time would be required for the funding fees to accumulate
     //
     // fees and price impact are validated in the validatePosition check
+    // 在 willPositionCollateralBeSufficient 校验中，不考虑费用和价格冲击。
+    // 这是因为该校验旨在防止特定场景下的价格冲击操控。
+    // 价格冲击可能通过开设高杠杆头寸来被操控，
+    // 如果应该收取的价格冲击费用高于头寸中可用的抵押品金额，
+    // 用户可能支付的价格冲击费用低于实际需求，
+    // 这样如果价格冲击成本低于应有的水平，就有可能出现价格操控获利的风险。
+        
+    // 即使不考虑费用，这个校验应该已经足够有效，因为费用对其影响较小。
+    // 可能会出现资金费或借贷费的积累并需要扣除，
+    // 这可能导致用户支付的价格冲击费用低于应付金额，
+    // 但是，这种形式的操控应该是比较困难的，因为资金费和借贷费仍然会计入用户的总成本。
+
+    // 另一种可能是，用户同时开设大量的多头和空头头寸，
+    // 资金费从一方支付给另一方，
+    // 但由于大部分的未平仓头寸由该用户持有，
+    // 用户将赚取大部分支付的费用。
+    // 在这种情况下，借贷费用仍然会非常显著，因为资金费用需要一定时间才能积累。
+
+    // 费用和价格冲击会在 validatePosition 校验中被验证。
     function willPositionCollateralBeSufficient(
         DataStore dataStore,
         Market.Props memory market,

@@ -1604,6 +1604,8 @@ library MarketUtils {
 
     // @dev update the swap impact pool amount, if it is a positive impact amount
     // cap the impact amount to the amount available in the swap impact pool
+    // 更新swap impact pool amount, 如果是正的impact, 就检查是否超过available in the swap impact pool
+    // 因为Keys.swapImpactPoolAmountKey(market, token)是正的, 所以不能让他小于0
     // @param dataStore DataStore
     // @param eventEmitter EventEmitter
     // @param market the market to apply to
@@ -1687,14 +1689,17 @@ library MarketUtils {
         // a user could avoid paying funding fees by continually updating the position
         // before the funding fee becomes large enough to be chargeable
         // to avoid this, funding fee amounts should be rounded up
-        //
+        //用户可能会通过不断地更新仓位来避免支付资金费，只要在资金费用尚未累积到足够大、需要收取之前操作即可。
         // this could lead to large additional charges if the token has a low number of decimals
         // or if the token's value is very high, so care should be taken to inform users of this
-        //
+        //为了防止这种行为，应该将资金费用金额向上取整。
         // if the calculation is for the claimable amount, the amount should be rounded down instead
 
         // divide the result by Precision.FLOAT_PRECISION * Precision.FLOAT_PRECISION_SQRT as the fundingAmountPerSize values
         // are stored based on FLOAT_PRECISION_SQRT values
+        // 不过，这可能会带来较大的额外费用，
+        // 尤其是在代币的小数位数很少，或代币价格非常高的情况下，
+        // 所以需要谨慎处理并提前告知用户。
         return Precision.mulDiv(
             positionSizeInUsd,
             fundingDiffFactor,
