@@ -129,6 +129,7 @@ library DecreasePositionCollateralUtils {
         );
 
         // if the pnl is positive, deduct the pnl amount from the pool
+        // 如果有盈余, 从pool中扣除PNL
         if (values.basePnlUsd > 0) {
             // use pnlTokenPrice.max to minimize the tokens paid out
             uint256 deductionAmountForPool = values.basePnlUsd.toUint256() / cache.pnlTokenPrice.max;
@@ -167,6 +168,8 @@ library DecreasePositionCollateralUtils {
             // the deduction value
             // the pool value is calculated by subtracting the worth of the tokens in the position impact pool
             // so this transfer of value would increase the price of the market token
+
+            //Position Price Impact 使用的是index token
             uint256 deductionAmountForPool = values.priceImpactUsd.toUint256() / cache.pnlTokenPrice.max;
 
             MarketUtils.applyDeltaToPoolAmount(
@@ -188,6 +191,8 @@ library DecreasePositionCollateralUtils {
         // if the decreasePositionSwapType was set to NoSwap or if the swap fails due
         // to insufficient liquidity or other reasons then it is possible that
         // the profit remains in a different token from the collateral token
+
+        // 将输出的两种token统一成token0.
         (collateralCache.wasSwapped, collateralCache.swapOutputAmount) = DecreasePositionSwapUtils.swapProfitToCollateralToken(
             params,
             cache.pnlToken,
@@ -208,6 +213,8 @@ library DecreasePositionCollateralUtils {
         );
 
         // pay for funding fees
+        // 这里没有实际的扣减. 都是从output或者抵押中去掉要扣除的费用.
+        // funding fee没有显式的转出, 说明是从pool amount中扣的.
         (values, collateralCache.result) = payForCost(
             params,
             values,
@@ -251,7 +258,7 @@ library DecreasePositionCollateralUtils {
                 collateralCache.result.amountPaidInSecondaryOutputToken
             );
         }
-
+        //余额不足以抵消支出.
         if (collateralCache.result.remainingCostUsd > 0) {
             return handleEarlyReturn(
                 params,
@@ -451,7 +458,7 @@ library DecreasePositionCollateralUtils {
                 cache.collateralTokenPrice,
                 values.priceImpactDiffUsd
             );
-
+            //为什么这里要increase???
             if (collateralCache.result.amountPaidInCollateralToken > 0) {
                 MarketUtils.incrementClaimableCollateralAmount(
                     params.contracts.dataStore,
@@ -543,12 +550,15 @@ library DecreasePositionCollateralUtils {
 
         uint256 remainingCostInOutputToken = Calc.roundUpDivision(costUsd, collateralTokenPrice.min);
 
+        //首先从outputAmount中扣,
         if (values.output.outputAmount > 0) {
+            //从outputAmount扣除要花掉的部分
             if (values.output.outputAmount > remainingCostInOutputToken) {
-                result.amountPaidInCollateralToken += remainingCostInOutputToken;
+                result.amountPaidInCollateralToken += remainingCostInOutputToken; //记录用抵押支付多少
                 values.output.outputAmount -= remainingCostInOutputToken;
                 remainingCostInOutputToken = 0;
             } else {
+                //output都用光, 还没花的计入remainingCostInOutputToken
                 result.amountPaidInCollateralToken += values.output.outputAmount;
                 remainingCostInOutputToken -= values.output.outputAmount;
                 values.output.outputAmount = 0;
@@ -556,7 +566,7 @@ library DecreasePositionCollateralUtils {
         }
 
         if (remainingCostInOutputToken == 0) { return (values, result); }
-
+        // 不够就从remainingCollateralAmount中扣
         if (values.remainingCollateralAmount > 0) {
             if (values.remainingCollateralAmount > remainingCostInOutputToken) {
                 result.amountPaidInCollateralToken += remainingCostInOutputToken;
@@ -574,7 +584,7 @@ library DecreasePositionCollateralUtils {
         Price.Props memory secondaryOutputTokenPrice = MarketUtils.getCachedTokenPrice(values.output.secondaryOutputToken, params.market, prices);
 
         uint256 remainingCostInSecondaryOutputToken = remainingCostInOutputToken * collateralTokenPrice.min / secondaryOutputTokenPrice.min;
-
+        //再不够就从secondaryOutputAmount中扣
         if (values.output.secondaryOutputAmount > 0) {
             if (values.output.secondaryOutputAmount > remainingCostInSecondaryOutputToken) {
                 result.amountPaidInSecondaryOutputToken += remainingCostInSecondaryOutputToken;

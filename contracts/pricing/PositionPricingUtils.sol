@@ -316,7 +316,7 @@ library PositionPricingUtils {
     function getPositionFees(
         GetPositionFeesParams memory params
     ) internal view returns (PositionFees memory) {
-        //坑啊. 不光是推荐的. PositionFees也在里面, 名字起得不直观
+        //不光是Referral(推荐)的. PositionFees也在里面, 名字起得不直观
         PositionFees memory fees = getPositionFeesAfterReferral(
             params.dataStore,
             params.referralStorage,

@@ -119,7 +119,7 @@ library DecreaseOrderUtils {
                 swapOutputAmount,
                 order.minOutputAmount()
             );
-
+  
             return getOutputEventData(
                 tokenOut,
                 swapOutputAmount,

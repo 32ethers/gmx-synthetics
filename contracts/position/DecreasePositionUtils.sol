@@ -166,7 +166,7 @@ library DecreasePositionUtils {
                 // the estimatedRemainingCollateralUsd subtracts the initialCollateralDeltaAmount
                 // since the initialCollateralDeltaAmount will be set to zero, the initialCollateralDeltaAmount
                 // should be added back to the estimatedRemainingCollateralUsd
-                //TODO: 不够就revert, 为什么要把处理的质押设置为0? 
+                //TODO: 不够就revert, 为什么要把处理的质押设置为0?  另外setInitialCollateralDeltaAmount(0)好像比较重要. 但是还没看出来有什么用
                 estimatedRemainingCollateralUsd += (params.order.initialCollateralDeltaAmount() * cache.collateralTokenPrice.min).toInt256();
                 params.order.setInitialCollateralDeltaAmount(0);
             }
@@ -281,7 +281,7 @@ library DecreasePositionUtils {
 
             PositionStoreUtils.set(params.contracts.dataStore, params.positionKey, params.position);
         }
-
+        //处理整个市场的
         MarketUtils.applyDeltaToCollateralSum(
             params.contracts.dataStore,
             params.contracts.eventEmitter,

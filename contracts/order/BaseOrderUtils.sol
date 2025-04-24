@@ -325,9 +325,10 @@ library BaseOrderUtils {
         cache.executionPrice = cache.price;
 
         // using closing of long positions as an example
-        // realized pnl is calculated as totalPositionPnl * sizeDeltaInTokens / position.sizeInTokens
+        // realized pnl = totalPositionPnl * sizeDeltaInTokens / position.sizeInTokens
         // totalPositionPnl: position.sizeInTokens * executionPrice - position.sizeInUsd
         // sizeDeltaInTokens: position.sizeInTokens * sizeDeltaUsd / position.sizeInUsd
+        // 所以展开可得
         // realized pnl: (position.sizeInTokens * executionPrice - position.sizeInUsd) * (position.sizeInTokens * sizeDeltaUsd / position.sizeInUsd) / position.sizeInTokens
         // realized pnl: (position.sizeInTokens * executionPrice - position.sizeInUsd) * (sizeDeltaUsd / position.sizeInUsd)
         // priceImpactUsd should adjust the execution price such that:
