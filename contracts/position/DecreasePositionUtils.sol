@@ -261,7 +261,7 @@ library DecreasePositionUtils {
         params.position.setCollateralAmount(values.remainingCollateralAmount);
         params.position.setDecreasedAtTime(Chain.currentTimestamp());
 
-        PositionUtils.incrementClaimableFundingAmount(params, fees);
+        PositionUtils.incrementClaimableFundingAmount(params, fees); //在processCollateral中, 处理的是funding fee, 也就是扣掉的部分, 这里处理的是claimable, 也就是用户挣的部分
 
         if (params.position.sizeInUsd() == 0 || params.position.sizeInTokens() == 0) {
             // withdraw all collateral if the position will be closed

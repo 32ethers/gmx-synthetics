@@ -179,7 +179,7 @@ library DecreasePositionCollateralUtils {
                 cache.pnlToken,
                 -deductionAmountForPool.toInt256()
             );
-
+            //!!!!!!!! 一定要追踪这个outputAmount !!!!!!!!!!!
             if (values.output.outputToken == cache.pnlToken) {
                 values.output.outputAmount += deductionAmountForPool;
             } else {
@@ -192,7 +192,7 @@ library DecreasePositionCollateralUtils {
         // to insufficient liquidity or other reasons then it is possible that
         // the profit remains in a different token from the collateral token
 
-        // 将输出的两种token统一成token0.
+        // 将利润转化为collateral token
         (collateralCache.wasSwapped, collateralCache.swapOutputAmount) = DecreasePositionSwapUtils.swapProfitToCollateralToken(
             params,
             cache.pnlToken,
@@ -211,6 +211,7 @@ library DecreasePositionCollateralUtils {
         PositionPricingUtils.PositionFees memory fees = PositionPricingUtils.getPositionFees(
             getPositionFeesParams
         );
+        // 刚才统一处理增加, 现在统一处理扣减
 
         // pay for funding fees
         // 这里没有实际的扣减. 都是从output或者抵押中去掉要扣除的费用.
@@ -268,7 +269,6 @@ library DecreasePositionCollateralUtils {
                 "funding"
             );
         }
-
         // pay for negative pnl
         if (values.basePnlUsd < 0) {
             (values, collateralCache.result) = payForCost(

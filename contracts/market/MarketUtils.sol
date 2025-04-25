@@ -625,7 +625,7 @@ library MarketUtils {
 
         uint256 nextPoolValue = dataStore.decrementUint(
             Keys.claimableFundingAmountKey(market, token),
-            claimableAmount
+            claimableAmountclaimableFundingAmountKey
         );
 
         MarketToken(payable(market)).transferOut(
@@ -2520,7 +2520,7 @@ library MarketUtils {
     ) internal view returns (uint256, uint256) {
         uint256 positionImpactPoolAmount = getPositionImpactPoolAmount(dataStore, market);
         if (positionImpactPoolAmount == 0) { return (0, positionImpactPoolAmount); }
-
+        //这是一个配置项, 相当于固定值
         uint256 distributionRate = dataStore.getUint(Keys.positionImpactPoolDistributionRateKey(market));
         if (distributionRate == 0) { return (0, positionImpactPoolAmount); }
 
@@ -2530,6 +2530,7 @@ library MarketUtils {
         uint256 maxDistributionAmount = positionImpactPoolAmount - minPositionImpactPoolAmount;
 
         uint256 durationInSeconds = getSecondsSincePositionImpactPoolDistributed(dataStore, market);
+        //所以distributionAmount 就是时间(秒)乘以一个固定的配置项? 
         uint256 distributionAmount = Precision.applyFactor(durationInSeconds, distributionRate);
 
         if (distributionAmount > maxDistributionAmount) {
@@ -2574,7 +2575,9 @@ library MarketUtils {
         );
 
         uint256 totalBorrowing = getTotalBorrowing(dataStore, market.marketToken, isLong);
-
+        //为什么这里不用担心负? 
+        //因为如果要负, 肯定是openInterest变小, 但是openInterest变小, 要经过decreasePosition,
+        //那里会修正totalBorrowing
         return Precision.applyFactor(openInterest, nextCumulativeBorrowingFactor) - totalBorrowing;
     }
 
