@@ -2573,11 +2573,15 @@ library MarketUtils {
             prices,
             isLong
         );
-
+        //TotalBorrowing值的变化
+        //参考交易0x5a1ec2ee12026a9d5bbd39419c3cfbf78d19f23c152f041eb02ac6612fe33b89, market: 0x77B2eC357b56c7d05a87971dB0188DBb0C7836a5
+        //              long                                short
+        //before: 111255238198278748970046203882215 24167046041075132233285822541311
+        //after:   95946166161544592784121393100258 24167046041075132233285822541311
+        // 正好是减少的openInterest
+        // (111255238198278748970046203882215 - 95946166161544592784121393100258)/38374646931842377995367788386=399.93
         uint256 totalBorrowing = getTotalBorrowing(dataStore, market.marketToken, isLong);
-        //为什么这里不用担心负? 
-        //因为如果要负, 肯定是openInterest变小, 但是openInterest变小, 要经过decreasePosition,
-        //那里会修正totalBorrowing
+
         return Precision.applyFactor(openInterest, nextCumulativeBorrowingFactor) - totalBorrowing;
     }
 
