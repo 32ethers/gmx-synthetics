@@ -483,7 +483,7 @@ library PositionUtils {
         );
 
         int256 remainingCollateralUsd = values.positionCollateralAmount.toInt256() * collateralTokenPrice.min.toInt256();
-
+        // 如果已经实现的PNL是亏损, 那么从质押中减去pnl, 看是否还有剩下的质押
         // deduct realized pnl if it is negative since this would be paid from
         // the position's collateral
         if (values.realizedPnlUsd < 0) {
@@ -500,19 +500,21 @@ library PositionUtils {
         // the position's pnl is not factored into the remainingCollateralUsd value, since
         // factoring in a positive pnl may allow the user to manipulate price and bypass this check
         // it may be useful to factor in a negative pnl for this check, this can be added if required
+
+        //新概念: minCollateralFactor, 计算方式: (openInterest+openInterestDelta)*MinCollateralFactorForOpenInterestMultiplier
         uint256 minCollateralFactor = MarketUtils.getMinCollateralFactorForOpenInterest(
             dataStore,
             market,
             values.openInterestDelta,
             isLong
         );
-
+        // 由于minCollateralFactor和openinterest有关, 所以它可能过大. 因此限制一下
         uint256 minCollateralFactorForMarket = MarketUtils.getMinCollateralFactor(dataStore, market.marketToken);
         // use the minCollateralFactor for the market if it is larger
         if (minCollateralFactorForMarket > minCollateralFactor) {
             minCollateralFactor = minCollateralFactorForMarket;
         }
-
+        //positionSizeInUsd * minCollateralFactor, 就是此次交易的中, 最小抵押量.剩余抵押必须大于这个数字
         int256 minCollateralUsdForLeverage = Precision.applyFactor(values.positionSizeInUsd, minCollateralFactor).toInt256();
         bool willBeSufficient = remainingCollateralUsd >= minCollateralUsdForLeverage;
 
