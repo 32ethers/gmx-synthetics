@@ -69,7 +69,7 @@ library IncreasePositionUtils {
             params.market,
             prices
         );
-
+        // 如果是空仓位
         if (params.position.sizeInUsd() == 0) {
             params.position.setFundingFeeAmountPerSize(
                 MarketUtils.getFundingFeeAmountPerSize(
@@ -287,7 +287,8 @@ library IncreasePositionUtils {
             fees.ui.uiFeeAmount,
             Keys.UI_POSITION_FEE_TYPE
         );
-
+        // 这里把funding fee也扣掉了
+        // 为啥increase 也会产生funding fee呢, 继续加仓了呗
         collateralDeltaAmount -= fees.totalCostAmount.toInt256();
 
         MarketUtils.applyDeltaToCollateralSum(
